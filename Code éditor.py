@@ -88,22 +88,22 @@ class CodeEditor:
     def libraries_setting(self):
         settings_window = tk.Toplevel(self.master)
         settings_window.title("Libraries Setting")
-        label = tk.Label(settings_window, text="Select libraries to use:")
+        label = tk.Label(settings_window, text="Select a library to use:")
         label.pack()
-        listbox = tk.Listbox(settings_window, selectmode=tk.MULTIPLE, exportselection=0)
+        listbox = tk.Listbox(settings_window, exportselection=0)
         libraries = [
             "numpy", "matplotlib", "pandas", "scipy", "sklearn", "tensorflow", "torch", "requests", "beautifulsoup4", "pygame"
         ]  
         for lib in libraries:
             listbox.insert(tk.END, lib)
         listbox.pack()
-        save_button = tk.Button(settings_window, text="Save", command=lambda: self.save_libraries(listbox.curselection(), settings_window))
+        save_button = tk.Button(settings_window, text="Save", command=lambda: self.save_library(listbox.get(tk.ACTIVE), settings_window))
         save_button.pack()
 
     def workspaces_setting(self):  
         settings_window = tk.Toplevel(self.master)
         settings_window.title("Work Spaces Setting")
-        label = tk.Label(settings_window, text="Select workspace:")
+        label = tk.Label(settings_window, text="Select a workspace:")
         label.pack()
         workspace_var = tk.StringVar()
         flask_radio = tk.Radiobutton(settings_window, text="Flask", variable=workspace_var, value="Flask")
@@ -113,13 +113,19 @@ class CodeEditor:
         save_button = tk.Button(settings_window, text="Save", command=lambda: self.save_workspace(workspace_var.get(), settings_window))
         save_button.pack()
 
-    def save_libraries(self, selections, settings_window):
-        self.libraries = [selections[i] for i in selections]
+    def save_library(self, library, settings_window):
+        self.libraries = [library]
         settings_window.destroy()
+        self.install_library_and_open_cmd()
 
     def save_workspace(self, workspace, settings_window):
         self.work_space = workspace
         settings_window.destroy()
+
+    def install_library_and_open_cmd(self):
+        lib = self.libraries[0]
+        cmd_command = f'cmd /c "pip install {lib}"'
+        subprocess.Popen(cmd_command, shell=True)
 
     def update_discord_activity(self):
         bot = commands.Bot(command_prefix='!')
@@ -136,3 +142,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
