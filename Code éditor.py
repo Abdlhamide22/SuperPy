@@ -1,8 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog, colorchooser, messagebox
 import subprocess
-import discord
-from discord.ext import commands
 
 class CodeEditor:
     def __init__(self, master):
@@ -29,7 +27,6 @@ class CodeEditor:
         settings_menu.add_command(label="Background Color", command=self.change_background_color)
         settings_menu.add_command(label="Libraries", command=self.libraries_setting)
         settings_menu.add_command(label="Work Spaces", command=self.workspaces_setting)  
-        settings_menu.add_command(label="Discord", command=self.update_discord_activity)  
         menubar.add_cascade(label="Settings", menu=settings_menu)
 
         self.master.config(menu=menubar)
@@ -56,29 +53,7 @@ class CodeEditor:
 
     def run_code(self):
         code = self.text_widget.get(1.0, tk.END)
-        if self.work_space == "Flask":
-            self.setup_flask_environment()
-        elif self.work_space == "Django":
-            self.setup_django_environment()
-        for lib in self.libraries:
-            code = f"import {lib}\n" + code
-        with open("temp.py", "w") as file:
-            file.write(code)
-        try:
-            result = subprocess.run(["python", "temp.py"], capture_output=True, text=True)
-            output = result.stdout
-            error = result.stderr
-            if error:
-                messagebox.showerror("Error", error)
-            else:
-                output_window = tk.Toplevel(self.master)
-                output_window.title("Output")
-                output_text = tk.Text(output_window, bg='black', fg='white', insertbackground='white', selectbackground='#333', selectforeground='white', wrap='word')
-                output_text.pack(expand=True, fill='both')
-                output_text.insert(tk.END, output)
-                output_text.config(state=tk.DISABLED)
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
+        # Execute code here
 
     def change_background_color(self):
         color = colorchooser.askcolor(title="Select Background Color")
@@ -88,17 +63,22 @@ class CodeEditor:
     def libraries_setting(self):
         settings_window = tk.Toplevel(self.master)
         settings_window.title("Libraries Setting")
-        label = tk.Label(settings_window, text="Select a library to use:")
+        label = tk.Label(settings_window, text="Select a library to install:")
         label.pack()
-        listbox = tk.Listbox(settings_window, exportselection=0)
+        listbox = tk.Listbox(settings_window)
         libraries = [
             "numpy", "matplotlib", "pandas", "scipy", "sklearn", "tensorflow", "torch", "requests", "beautifulsoup4", "pygame"
         ]  
         for lib in libraries:
             listbox.insert(tk.END, lib)
         listbox.pack()
-        save_button = tk.Button(settings_window, text="Save", command=lambda: self.save_library(listbox.get(tk.ACTIVE), settings_window))
+        save_button = tk.Button(settings_window, text="Save", command=lambda: self.install_selected_library(listbox.get(tk.ACTIVE), settings_window))
         save_button.pack()
+
+    def install_selected_library(self, library, settings_window):
+        cmd_command = f'cmd /c "pip install {library}"'
+        subprocess.Popen(cmd_command, shell=True)
+        settings_window.destroy()
 
     def workspaces_setting(self):  
         settings_window = tk.Toplevel(self.master)
@@ -113,27 +93,9 @@ class CodeEditor:
         save_button = tk.Button(settings_window, text="Save", command=lambda: self.save_workspace(workspace_var.get(), settings_window))
         save_button.pack()
 
-    def save_library(self, library, settings_window):
-        self.libraries = [library]
-        settings_window.destroy()
-        self.install_library_and_open_cmd()
-
     def save_workspace(self, workspace, settings_window):
         self.work_space = workspace
         settings_window.destroy()
-
-    def install_library_and_open_cmd(self):
-        lib = self.libraries[0]
-        cmd_command = f'cmd /c "pip install {lib}"'
-        subprocess.Popen(cmd_command, shell=True)
-
-    def update_discord_activity(self):
-        bot = commands.Bot(command_prefix='!')
-        @bot.event
-        async def on_ready():
-            print('Bot is ready!')
-            await bot.change_presence(activity=discord.Game(name="Editing Code"))  
-        bot.run('1202723131198935150')
 
 def main():
     root = tk.Tk()
