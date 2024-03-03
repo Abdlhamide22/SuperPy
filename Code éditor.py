@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, colorchooser, messagebox
+from tkinter import filedialog, colorchooser, messagebox, font, ttk
 from pygments import highlight
 from pygments.lexers import PythonLexer
 from pygments.formatters import Terminal256Formatter
@@ -25,19 +25,21 @@ class CodeEditor:
         file_menu = tk.Menu(menubar, tearoff=0)
         file_menu.add_command(label="Open", command=self.open_file)
         file_menu.add_command(label="Save", command=self.save_file)
-        file_menu.add_command(label="Run", command=self.run_code)  # Add Run command here
+        file_menu.add_command(label="Run", command=self.run_code, accelerator="Ctrl+R")
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.master.quit)
         menubar.add_cascade(label="File", menu=file_menu)
 
-        # Add Settings menu
+        
         settings_menu = tk.Menu(menubar, tearoff=0)
         settings_menu.add_command(label="Background Color", command=self.change_background_color)
         settings_menu.add_command(label="Libraries", command=self.libraries_setting)
-        settings_menu.add_command(label="Work Spaces", command=self.workspaces_setting)  
+        settings_menu.add_command(label="Work Spaces", command=self.workspaces_setting)
+        settings_menu.add_command(label="Font", command=self.change_font)  
         menubar.add_cascade(label="Settings", menu=settings_menu)
 
         self.master.config(menu=menubar)
+        self.master.bind('<Control-r>', self.run_code)
 
     def create_sidebar(self):
         sidebar = tk.Frame(self.master, bg='gray')
@@ -71,10 +73,10 @@ class CodeEditor:
             elif self.work_space == "Django":
                 start_django_server()
 
-    def run_code(self):
+    def run_code(self, event=None):
         code = self.text_widget.get(1.0, tk.END)
         try:
-            # Execute code
+            
             output = subprocess.check_output(['python', '-c', code], stderr=subprocess.STDOUT, timeout=5)
             output = output.decode('utf-8')
             self.output_text.delete(1.0, tk.END)
@@ -99,7 +101,7 @@ class CodeEditor:
         label.pack()
         listbox = tk.Listbox(settings_window)
         libraries = [
-            "numpy", "matplotlib", "pandas", "scipy", "sklearn", "tensorflow", "torch", "requests", "beautifulsoup4", "pygame", "flask", "django", "requests", "kivy", "tkinter"
+            "numpy", "matplotlib", "pandas", "scipy", "sklearn", "tensorflow", "torch", "requests", "beautifulsoup4", "pygame", "requests", "kivy", "tkinter"
         ]  
         for lib in libraries:
             listbox.insert(tk.END, lib)
@@ -136,6 +138,33 @@ class CodeEditor:
         highlighted_code = highlight(code, PythonLexer(), Terminal256Formatter(style='colorful'))
         self.text_widget.insert(tk.END, highlighted_code)
 
+    def change_font(self):
+        
+        beautiful_fonts = ["Helvetica", "Arial", "Verdana", "Times New Roman", "Garamond"]
+
+        settings_window = tk.Toplevel(self.master)
+        settings_window.title("Font Setting")
+        label = tk.Label(settings_window, text="Select a font:")
+        label.pack()
+        font_var = tk.StringVar()
+        font_var.set(beautiful_fonts[0])  
+
+        
+        font_option_menu = tk.OptionMenu(settings_window, font_var, *beautiful_fonts)
+        font_option_menu.pack()
+
+        save_button = tk.Button(settings_window, text="Save", command=lambda: self.save_font_setting(settings_window, font_var.get()))
+        save_button.pack()
+
+    def save_font_setting(self, settings_window, selected_font):
+        self.apply_font(selected_font)
+        settings_window.destroy()
+
+    def apply_font(self, selected_font):
+        self.text_widget.config(font=(selected_font, 12))  
+        
+        self.output_text.config(font=(selected_font, 12))
+
 def start_django_server():
     try:
         subprocess.Popen(['python', 'manage.py', 'runserver'])
@@ -155,5 +184,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
