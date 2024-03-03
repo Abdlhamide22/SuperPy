@@ -4,7 +4,6 @@ from pygments import highlight
 from pygments.lexers import PythonLexer
 from pygments.formatters import Terminal256Formatter
 import subprocess
-import tkinter.font as tkfont
 
 class CodeEditor:
     def __init__(self, master):
@@ -12,50 +11,43 @@ class CodeEditor:
         self.master.title("SuperPy")
         self.text_widget = tk.Text(self.master, bg='black', fg='white', insertbackground='white', selectbackground='#333', selectforeground='white', undo=True)
         self.text_widget.pack(expand=True, fill='both')
+        self.output_frame = tk.Frame(self.master, bg='black')
+        self.output_frame.pack(expand=True, fill='both')
+        self.output_text = tk.Text(self.output_frame, bg='black', fg='white', insertbackground='white', selectbackground='#333', selectforeground='white')
+        self.output_text.pack(expand=True, fill='both')
         self.create_menu()
-        self.create_toolbar()
+        self.create_sidebar()
         self.libraries = []
         self.work_space = None
-        self.current_font = ("Courier", 12)  # Default font
 
     def create_menu(self):
         menubar = tk.Menu(self.master)
         file_menu = tk.Menu(menubar, tearoff=0)
         file_menu.add_command(label="Open", command=self.open_file)
         file_menu.add_command(label="Save", command=self.save_file)
+        file_menu.add_command(label="Run", command=self.run_code)  # Add Run command here
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.master.quit)
         menubar.add_cascade(label="File", menu=file_menu)
 
-        
+        # Add Settings menu
         settings_menu = tk.Menu(menubar, tearoff=0)
         settings_menu.add_command(label="Background Color", command=self.change_background_color)
         settings_menu.add_command(label="Libraries", command=self.libraries_setting)
-        settings_menu.add_command(label="Work Spaces", command=self.workspaces_setting)
-
-        
-        font_options = [
-            ("Arial", 10),
-            ("Helvetica", 10),
-            ("Times", 10),
-            ("Courier", 10),
-            ("Verdana", 10)
-        ]
-
-        font_submenu = tk.Menu(settings_menu, tearoff=0)
-        for font_name, font_size in font_options:
-            font_submenu.add_command(label=f"{font_name} {font_size}", command=lambda f=(font_name, font_size): self.change_font(f))
-        settings_menu.add_cascade(label="Font", menu=font_submenu)
-
+        settings_menu.add_command(label="Work Spaces", command=self.workspaces_setting)  
         menubar.add_cascade(label="Settings", menu=settings_menu)
 
         self.master.config(menu=menubar)
 
-    def create_toolbar(self):
-        toolbar = tk.Frame(self.master)
-        toolbar.pack(side=tk.TOP, fill=tk.X)
-        run_button = tk.Button(toolbar, text="Run", command=self.run_code)
-        run_button.pack(side=tk.LEFT)
+    def create_sidebar(self):
+        sidebar = tk.Frame(self.master, bg='gray')
+        sidebar.pack(side=tk.LEFT, fill=tk.Y)
+
+        open_file_button = tk.Button(sidebar, text="Open File", command=self.open_file)
+        open_file_button.pack(fill=tk.X)
+
+        create_file_button = tk.Button(sidebar, text="Create File", command=self.create_file)
+        create_file_button.pack(fill=tk.X)
 
     def open_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("Python Files", "*.py"), ("All Files", "*.*")])
@@ -64,6 +56,9 @@ class CodeEditor:
                 self.text_widget.delete(1.0, tk.END)
                 code = file.read()
                 self.insert_highlighted_code(code)
+
+    def create_file(self):
+        self.text_widget.delete(1.0, tk.END)
 
     def save_file(self):
         file_path = filedialog.asksaveasfilename(defaultextension=".py", filetypes=[("Python Files", "*.py"), ("All Files", "*.*")])
@@ -78,7 +73,19 @@ class CodeEditor:
 
     def run_code(self):
         code = self.text_widget.get(1.0, tk.END)
-       
+        try:
+            # Execute code
+            output = subprocess.check_output(['python', '-c', code], stderr=subprocess.STDOUT, timeout=5)
+            output = output.decode('utf-8')
+            self.output_text.delete(1.0, tk.END)
+            self.output_text.insert(tk.END, output)
+        except subprocess.CalledProcessError as e:
+            error_output = e.output.decode('utf-8')
+            self.output_text.delete(1.0, tk.END)
+            self.output_text.insert(tk.END, error_output)
+        except subprocess.TimeoutExpired:
+            self.output_text.delete(1.0, tk.END)
+            self.output_text.insert(tk.END, "Execution timed out.")
 
     def change_background_color(self):
         color = colorchooser.askcolor(title="Select Background Color")
@@ -92,8 +99,8 @@ class CodeEditor:
         label.pack()
         listbox = tk.Listbox(settings_window)
         libraries = [
-            "numpy", "matplotlib", "pandas", "scipy", "sklearn", "tensorflow", "torch", "requests", "beautifulsoup4", "pygame", "requests", "kivy", "tkinter"
-        ]
+            "numpy", "matplotlib", "pandas", "scipy", "sklearn", "tensorflow", "torch", "requests", "beautifulsoup4", "pygame", "flask", "django", "requests", "kivy", "tkinter"
+        ]  
         for lib in libraries:
             listbox.insert(tk.END, lib)
         listbox.pack()
@@ -108,7 +115,7 @@ class CodeEditor:
             print(f"An error occurred while installing {library}: {e}")
         settings_window.destroy()
 
-    def workspaces_setting(self):
+    def workspaces_setting(self):  
         settings_window = tk.Toplevel(self.master)
         settings_window.title("Work Spaces Setting")
         label = tk.Label(settings_window, text="Select a workspace:")
@@ -129,10 +136,6 @@ class CodeEditor:
         highlighted_code = highlight(code, PythonLexer(), Terminal256Formatter(style='colorful'))
         self.text_widget.insert(tk.END, highlighted_code)
 
-    def change_font(self, font):
-        self.current_font = font
-        self.text_widget.config(font=font)
-
 def start_django_server():
     try:
         subprocess.Popen(['python', 'manage.py', 'runserver'])
@@ -152,4 +155,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
